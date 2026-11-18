@@ -35,9 +35,18 @@ jobs:
         echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build
+    name: Build (${{ matrix.target_arch }})
     needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_arch: x86_64
+            suffix: ""
+          - target_arch: arm64
+            suffix: "-aarch64"
     uses: ./.github/workflows/_job_build.yml
     with:
-      name: ${{ needs.version.outputs.full_desc }}-${{ needs.version.outputs.branch }}
+      name: ${{ needs.version.outputs.full_desc }}-${{ needs.version.outputs.branch }}${{ matrix.suffix }}
+      target_arch: ${{ matrix.target_arch }}
 
