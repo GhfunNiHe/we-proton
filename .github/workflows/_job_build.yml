@@ -13,7 +13,7 @@ on:
 jobs:
   proton:
     name: Build ${{ inputs.name }}
-    runs-on: ${{ inputs.target_arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.target_arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
       - name: Cleanup disk space
         uses: endersonmenezes/free-disk-space@v3
@@ -50,7 +50,19 @@ jobs:
           fi
 
       - name: Prepare host
-        run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if sudo apt-get -o Acquire::Retries=2 update && \
+              sudo apt-get -o Acquire::Retries=2 install -y ccache fontforge-nox; then
+              exit 0
+            fi
+            if (( attempt == 3 )); then
+              echo "::error::Failed to install build dependencies after $attempt attempts."
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Restore cache
         id: ccache-restore
