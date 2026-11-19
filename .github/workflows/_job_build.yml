@@ -80,8 +80,10 @@ jobs:
           find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} \;
           echo "=== ONNX Runtime headers and archives ==="
           find build/obj-piper-* -type f \\( -name 'onnxruntime_cxx_api.h' -o -name 'onnxruntime_c_api.h' -o -name 'onnxruntime-linux-*.tgz' \\) -print
-          echo "=== ONNX Runtime extracted directories ==="
-          find build/obj-piper-* -type d -name 'onnxruntime-*' -print
+          echo "=== ONNX Runtime archive contents ==="
+          find build/obj-piper-* -type f -name 'onnxruntime-linux-*.tgz' -exec tar -tzf {} \\;
+          echo "=== ONNX Runtime extracted files ==="
+          find build/obj-piper-* -type d -name 'onnxruntime-*' -exec find {} -maxdepth 3 -type f -printf '%p\\n' \\;
 
       - name: Save cache
         id: ccache-save
