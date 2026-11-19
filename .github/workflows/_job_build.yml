@@ -22,8 +22,6 @@ jobs:
           remove_dotnet: true
           remove_haskell: true
           remove_tool_cache: true
-          remove_codeql: true
-          remove_docker_images: true
           remove_swap: true
           remove_packages: |
             azure-cli google-cloud-cli google-chrome-stable firefox microsoft-edge-stable
@@ -32,7 +30,10 @@ jobs:
             /usr/share/swift /usr/share/miniconda /usr/local/lib/node_modules
             /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia*
             /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle /usr/share/az*
-            /usr/local/.ghcup
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+
+      - name: Remove preinstalled Docker images
+        run: docker image prune --all --force || true
 
       - name: Prepare host
         run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
@@ -71,12 +72,21 @@ jobs:
       - name: Make ${{ inputs.name }}
         working-directory: ./build
         run: |
-          make -j$(nproc) redist
+          set -o pipefail
+          make -j$(nproc) redist 2>&1 | tee >(tail -n 1000 > make-tail.log)
 
       - name: Dump build failure diagnostics
         if: failure()
         shell: bash
         run: |
+          if [ -f build/make-tail.log ]; then
+            {
+              echo "=== matching errors from Make tail ==="
+              grep -n -i -E -C 3 'fatal error:|error:|undefined reference|no space left on device|failed:|ninja: build stopped|make(\\[[0-9]+\\])?: \\*\\*\\*' build/make-tail.log | tail -n 1200 || true
+              echo "=== final Make output ==="
+              cat build/make-tail.log
+            } > build/build-failure-diagnostics.txt
+          fi
           if [ -d build ]; then
             echo "=== dav1d Meson diagnostics ==="
             find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} +
@@ -97,6 +107,14 @@ jobs:
             echo "No build directory; failure occurred before Configure."
           fi
 
+      - name: Upload build failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-failure-diagnostics-${{ inputs.target_arch }}
+          path: ./build/build-failure-diagnostics.txt
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Save cache
         id: ccache-save
         if: always()
