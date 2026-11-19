@@ -46,7 +46,7 @@
 +                file(DOWNLOAD "${ONNXRUNTIME_URL}" "${ONNXRUNTIME_ARCHIVE}"
 +                    STATUS ONNXRUNTIME_DOWNLOAD_STATUS
 +                    TIMEOUT 180
-++                )
++                )
 +                list(GET ONNXRUNTIME_DOWNLOAD_STATUS 0 ONNXRUNTIME_DOWNLOAD_CODE)
 +                if(ONNXRUNTIME_DOWNLOAD_CODE EQUAL 0)
 +                    execute_process(
