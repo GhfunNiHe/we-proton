@@ -1,15 +1,15 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -39,5 +39,5 @@
+@@ -39,7 +39,7 @@
  # Look for onnxruntime files in <root>/lib
  if(NOT DEFINED ONNXRUNTIME_DIR)
      if(NOT DEFINED ONNXRUNTIME_VERSION)
 -        set(ONNXRUNTIME_VERSION "1.14.1")
 +        set(ONNXRUNTIME_VERSION "1.16.1")
      endif()
-@@ -79,6 +79,14 @@
-     if(NOT DEFINED ONNXRUNTIME_URL)
-         set(ONNXRUNTIME_URL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/${ONNXRUNTIME_PREFIX}.${ONNXRUNTIME_EXT}")
+ 
+     if(WIN32)
+@@ -81,17 +81,79 @@
      endif()
  
      set(ONNXRUNTIME_FILENAME "${ONNXRUNTIME_PREFIX}.${ONNXRUNTIME_EXT}")
@@ -22,17 +22,7 @@
 +        set(ONNXRUNTIME_URL "https://huggingface.co/csukuangfj/onnxruntime-libs/resolve/cb9a8139aa224578a079a9810951874d33bcf8df/${ONNXRUNTIME_FILENAME}")
 +    endif()
      set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/${ONNXRUNTIME_PREFIX}")
-@@ -86,10 +94,65 @@
--    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
--        if(NOT EXISTS "download/${ONNXRUNTIME_FILENAME}")
-             # Download onnxruntime release
--            message("Downloading ${ONNXRUNTIME_URL}")
--            file(DOWNLOAD "${ONNXRUNTIME_URL}" "download/${ONNXRUNTIME_FILENAME}")
--        endif()
--
--        # Extract .zip or .tgz to a directory like lib/onnxruntime-linux-x64-1.14.1/
--        file(ARCHIVE_EXTRACT INPUT "download/${ONNXRUNTIME_FILENAME}" DESTINATION "${CMAKE_CURRENT_LIST_DIR}/lib")
--    endif()
+ 
 +    set(ONNXRUNTIME_ARCHIVE "${CMAKE_CURRENT_BINARY_DIR}/download/${ONNXRUNTIME_FILENAME}")
 +    set(ONNXRUNTIME_HEADER "${ONNXRUNTIME_DIR}/include/onnxruntime_cxx_api.h")
 +
@@ -41,7 +31,9 @@
 +        file(REMOVE_RECURSE "${ONNXRUNTIME_DIR}")
 +    endif()
 +
-+    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
+     if(NOT EXISTS "${ONNXRUNTIME_DIR}")
+-        if(NOT EXISTS "download/${ONNXRUNTIME_FILENAME}")
+-            # Download onnxruntime release
 +        file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/download")
 +        set(ONNXRUNTIME_ARCHIVE_VALID FALSE)
 +
@@ -62,7 +54,12 @@
 +        endif()
 +
 +        if(NOT ONNXRUNTIME_ARCHIVE_VALID)
-+            message("Downloading ${ONNXRUNTIME_URL}")
+             message("Downloading ${ONNXRUNTIME_URL}")
+-            file(DOWNLOAD "${ONNXRUNTIME_URL}" "download/${ONNXRUNTIME_FILENAME}")
+-        endif()
+-
+-        # Extract .zip or .tgz to a directory like lib/onnxruntime-linux-x64-1.14.1/
+-        file(ARCHIVE_EXTRACT INPUT "download/${ONNXRUNTIME_FILENAME}" DESTINATION "${CMAKE_CURRENT_LIST_DIR}/lib")
 +            foreach(ONNXRUNTIME_ATTEMPT RANGE 1 5)
 +                file(REMOVE "${ONNXRUNTIME_ARCHIVE}")
 +                file(DOWNLOAD "${ONNXRUNTIME_URL}" "${ONNXRUNTIME_ARCHIVE}"
@@ -96,4 +93,6 @@
 +        if(NOT EXISTS "${ONNXRUNTIME_HEADER}")
 +            message(FATAL_ERROR "ONNX Runtime archive did not contain ${ONNXRUNTIME_HEADER}")
 +        endif()
-+    endif()
+     endif()
+ endif()
+ 
