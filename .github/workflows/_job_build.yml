@@ -79,12 +79,12 @@ jobs:
           echo "=== dav1d Meson diagnostics ==="
           find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} \;
           echo "=== ONNX Runtime headers and archives ==="
-          find build/obj-piper-* -type f -name 'onnxruntime_cxx_api.h' -print
-          find build/obj-piper-* -type f -name 'onnxruntime_c_api.h' -print
+          find build -type f -name 'onnxruntime_cxx_api.h' -print
+          find build -type f -name 'onnxruntime_c_api.h' -print
           echo "=== ONNX Runtime archive contents ==="
-          while IFS= read -r archive; do tar -tzf "$archive"; done < <(find build/obj-piper-* -type f -name 'onnxruntime-linux-*.tgz')
+          while IFS= read -r archive; do tar -tzf "$archive"; done < <(find build -type f -name 'onnxruntime-linux-*.tgz')
           echo "=== ONNX Runtime extracted files ==="
-          while IFS= read -r dir; do find "$dir" -maxdepth 3 -type f -print; done < <(find build/obj-piper-* -type d -name 'onnxruntime-*')
+          while IFS= read -r dir; do find "$dir" -maxdepth 3 -type f -print; done < <(find build -type d -name 'onnxruntime-*')
 
       - name: Save cache
         id: ccache-save
