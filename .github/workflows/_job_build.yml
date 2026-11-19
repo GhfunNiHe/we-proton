@@ -72,6 +72,17 @@ jobs:
         run: |
           make -j$(nproc) redist
 
+      - name: Dump build failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== dav1d Meson diagnostics ==="
+          find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} \;
+          echo "=== ONNX Runtime headers and archives ==="
+          find build/obj-piper-* -type f \\( -name 'onnxruntime_cxx_api.h' -o -name 'onnxruntime_c_api.h' -o -name 'onnxruntime-linux-*.tgz' \\) -print
+          echo "=== ONNX Runtime extracted directories ==="
+          find build/obj-piper-* -type d -name 'onnxruntime-*' -print
+
       - name: Save cache
         id: ccache-save
         if: always()
