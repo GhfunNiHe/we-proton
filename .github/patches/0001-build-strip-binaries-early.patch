@@ -8,21 +8,11 @@ Subject: [PATCH] build: strip binaries early
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index cf9a1f71..0a284e58 100644
 --- a/Makefile.in
 +++ b/Makefile.in
-@@ -54,10 +54,11 @@
- i386_CFLAGS    := -mstackrealign -march=nocona -mtune=core-avx2 -mfpmath=sse
- x86_64_CFLAGS  := -mcmodel=small -march=nocona -mtune=core-avx2 -mfpmath=sse
- aarch64_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
- arm64ec_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
- 
- CFLAGS  = -O2 -fwrapv -fno-strict-aliasing
+@@ -60,1 +60,2 @@
 -CFLAGS += -ggdb -ffunction-sections -fdata-sections -fno-omit-frame-pointer
 +CFLAGS += -g0 -ffunction-sections -fdata-sections -fno-omit-frame-pointer
 +LDFLAGS += -s
- CFLAGS += -ffile-prefix-map=$(CCACHE_BASEDIR)=.
- 
- ifneq ($(SUPPRESS_WARNINGS),)
 -- 
 2.50.0
