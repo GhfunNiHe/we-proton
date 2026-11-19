@@ -2,7 +2,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 0000000..0000000 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -76,10 +76,65 @@
+@@ -76,10 +76,64 @@
 -    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
 -        if(NOT EXISTS "download/${ONNXRUNTIME_FILENAME}")
              # Download onnxruntime release
@@ -48,8 +48,7 @@ index 0000000..0000000 100644
 +                file(DOWNLOAD "${ONNXRUNTIME_URL}" "${ONNXRUNTIME_ARCHIVE}"
 +                    STATUS ONNXRUNTIME_DOWNLOAD_STATUS
 +                    TIMEOUT 180
-+                    INACTIVITY_TIMEOUT 30
-+                )
+++                )
 +                list(GET ONNXRUNTIME_DOWNLOAD_STATUS 0 ONNXRUNTIME_DOWNLOAD_CODE)
 +                if(ONNXRUNTIME_DOWNLOAD_CODE EQUAL 0)
 +                    execute_process(
