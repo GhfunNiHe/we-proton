@@ -6,7 +6,7 @@
      PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
 -    URL "https://github.com/shaunren/piper-phonemize/archive/refs/heads/pic.zip"
 +    URL "https://github.com/shaunren/piper-phonemize/archive/5ecbb9b59abcffe03a9775ae82491c9ac5037f4d.zip"
-+    PATCH_COMMAND patch -p1 -i "${PROJECT_SOURCE_DIR}/../.github/patches/0003-piper-phonemize-onnx-download-retry.patch"
++    PATCH_COMMAND patch -p1 -i "${PROJECT_SOURCE_DIR}/../../.github/patches/0003-piper-phonemize-onnx-download-retry.patch"
      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
    )
    add_dependencies(piper piper_phonemize_external)
