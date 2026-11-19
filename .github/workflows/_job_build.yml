@@ -79,7 +79,7 @@ jobs:
         run: |
           if [ -d build ]; then
             echo "=== dav1d Meson diagnostics ==="
-            find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} \\;
+            find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} +
             echo "=== ONNX Runtime headers and archives ==="
             find build -type f -name 'onnxruntime_cxx_api.h' -print
             find build -type f -name 'onnxruntime_c_api.h' -print
