@@ -77,21 +77,25 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          echo "=== dav1d Meson diagnostics ==="
-          find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} \;
-          echo "=== ONNX Runtime headers and archives ==="
-          find build -type f -name 'onnxruntime_cxx_api.h' -print
-          find build -type f -name 'onnxruntime_c_api.h' -print
-          echo "=== ONNX Runtime archive contents ==="
-          while IFS= read -r archive; do
-            if tar -tzf "$archive" >/dev/null; then
-              echo "Valid archive: $archive"
-            else
-              echo "::warning::ONNX Runtime archive is truncated or invalid: $archive"
-            fi
-          done < <(find build -type f -name 'onnxruntime-linux-*.tgz')
-          echo "=== ONNX Runtime extracted files ==="
-          while IFS= read -r dir; do find "$dir" -maxdepth 3 -type f -print; done < <(find build -type d -name 'onnxruntime-*')
+          if [ -d build ]; then
+            echo "=== dav1d Meson diagnostics ==="
+            find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} \\;
+            echo "=== ONNX Runtime headers and archives ==="
+            find build -type f -name 'onnxruntime_cxx_api.h' -print
+            find build -type f -name 'onnxruntime_c_api.h' -print
+            echo "=== ONNX Runtime archive contents ==="
+            while IFS= read -r archive; do
+              if tar -tzf "$archive" >/dev/null; then
+                echo "Valid archive: $archive"
+              else
+                echo "::warning::ONNX Runtime archive is truncated or invalid: $archive"
+              fi
+            done < <(find build -type f -name 'onnxruntime-linux-*.tgz')
+            echo "=== ONNX Runtime extracted files ==="
+            while IFS= read -r dir; do find "$dir" -maxdepth 3 -type f -print; done < <(find build -type d -name 'onnxruntime-*')
+          else
+            echo "No build directory; failure occurred before Configure."
+          fi
 
       - name: Save cache
         id: ccache-save
