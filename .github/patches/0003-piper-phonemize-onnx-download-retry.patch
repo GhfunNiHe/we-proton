@@ -5,7 +5,7 @@ index 0000000..0000000 100644
 @@ -76,10 +76,64 @@
 -    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
 -        if(NOT EXISTS "download/${ONNXRUNTIME_FILENAME}")
--            # Download ONNX Runtime release
++            # Download onnxruntime release
 -            message("Downloading ${ONNXRUNTIME_URL}")
 -            file(DOWNLOAD "${ONNXRUNTIME_URL}" "download/${ONNXRUNTIME_FILENAME}")
 -        endif()
