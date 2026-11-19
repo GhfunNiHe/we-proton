@@ -39,7 +39,9 @@ jobs:
         echo "tag_offset=$tag_offset" >> $GITHUB_OUTPUT
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         echo "full_desc=$full_desc" >> $GITHUB_OUTPUT
-        echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+        branch=${branch//\//-}
+        echo "branch=$branch" >> $GITHUB_OUTPUT
 
   build:
     name: Build (${{ matrix.target_arch }})
