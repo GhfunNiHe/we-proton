@@ -2,7 +2,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 0000000..0000000 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -76,14 +76,54 @@
+@@ -76,10 +76,64 @@
 -    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
 -        if(NOT EXISTS "download/${ONNXRUNTIME_FILENAME}")
 -            # Download ONNX Runtime release
