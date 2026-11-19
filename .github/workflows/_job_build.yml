@@ -43,9 +43,7 @@ jobs:
           echo "WE_PROTON_DOCKER_OPTS=" >> "$GITHUB_ENV"
           if [[ "$docker_version" == "29.4.2" ]]; then
             profile="$RUNNER_TEMP/seccomp-v0.2.1.json"
-            curl -fsSL \\
-              https://raw.githubusercontent.com/moby/profiles/5ad5f40ecde90d78e4a7c861c003fe92747d5518/seccomp/default.json \\
-              -o "$profile"
+            curl -fsSL https://raw.githubusercontent.com/moby/profiles/5ad5f40ecde90d78e4a7c861c003fe92747d5518/seccomp/default.json -o "$profile"
             python3 -m json.tool "$profile" >/dev/null
             echo "WE_PROTON_DOCKER_OPTS=--security-opt=seccomp=$profile" >> "$GITHUB_ENV"
             echo "Using the pinned Docker v0.2.1 profile for 32-bit socketcall compatibility."
