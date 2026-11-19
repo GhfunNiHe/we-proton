@@ -58,8 +58,9 @@ jobs:
           git submodule update --init --filter=tree:0 --recursive
           # apply proton-ge-custom patches
           ./patches/protonprep-valve-staging.sh || true
-          # strip binaries at compile time to save space in the runner
+          # disable debug info and strip linked outputs to save space in the runner
           patch -Np1 -i ./.github/patches/0001-build-strip-binaries-early.patch
+          patch -Np1 -i ./.github/patches/0002-piper-phonemize-download-retry.patch
           mkdir ./build
 
       - name: Configure
@@ -82,7 +83,13 @@ jobs:
           find build -type f -name 'onnxruntime_cxx_api.h' -print
           find build -type f -name 'onnxruntime_c_api.h' -print
           echo "=== ONNX Runtime archive contents ==="
-          while IFS= read -r archive; do tar -tzf "$archive"; done < <(find build -type f -name 'onnxruntime-linux-*.tgz')
+          while IFS= read -r archive; do
+            if tar -tzf "$archive" >/dev/null; then
+              echo "Valid archive: $archive"
+            else
+              echo "::warning::ONNX Runtime archive is truncated or invalid: $archive"
+            fi
+          done < <(find build -type f -name 'onnxruntime-linux-*.tgz')
           echo "=== ONNX Runtime extracted files ==="
           while IFS= read -r dir; do find "$dir" -maxdepth 3 -type f -print; done < <(find build -type d -name 'onnxruntime-*')
 
