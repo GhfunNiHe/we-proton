@@ -51,7 +51,7 @@ jobs:
       matrix:
         include:
           - target_arch: x86_64
-            suffix: ""
+            suffix: "-x86_64"
           - target_arch: arm64
             suffix: "-aarch64"
     uses: ./.github/workflows/_job_build.yml
