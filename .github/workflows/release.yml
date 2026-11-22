@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
           - target_arch: x86_64
-            suffix: ""
+            suffix: "-x86_64"
           - target_arch: arm64
             suffix: "-aarch64"
     uses: ./.github/workflows/_job_build.yml
@@ -62,7 +62,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: ${{ github.ref_name }}
+          - name: ${{ github.ref_name }}-x86_64
           - name: ${{ github.ref_name }}-aarch64
     uses: ./.github/workflows/_job_upload.yml
     with:
