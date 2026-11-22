@@ -6,11 +6,14 @@ on:
       name:
         required: true
         type: string
+      target_arch:
+        required: true
+        type: string
 
 jobs:
   proton:
     name: Build ${{ inputs.name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.target_arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     steps:
       - name: Cleanup disk space
         uses: endersonmenezes/free-disk-space@v3
@@ -19,8 +22,6 @@ jobs:
           remove_dotnet: true
           remove_haskell: true
           remove_tool_cache: true
-          remove_codeql: true
-          remove_docker_images: true
           remove_swap: true
           remove_packages: |
             azure-cli google-cloud-cli google-chrome-stable firefox microsoft-edge-stable
@@ -29,19 +30,48 @@ jobs:
             /usr/share/swift /usr/share/miniconda /usr/local/lib/node_modules
             /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia*
             /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle /usr/share/az*
-            /usr/local/.ghcup
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+
+      - name: Remove preinstalled Docker images
+        run: docker image prune --all --force || true
+
+      - name: Prepare Wine-compatible Docker seccomp profile
+        shell: bash
+        run: |
+          docker_version=$(docker version --format '{{.Server.Version}}')
+          echo "Docker Engine: $docker_version"
+          echo "WE_PROTON_DOCKER_OPTS=" >> "$GITHUB_ENV"
+          if [[ "$docker_version" == "29.4.2" ]]; then
+            profile="$RUNNER_TEMP/seccomp-v0.2.1.json"
+            curl -fsSL https://raw.githubusercontent.com/moby/profiles/5ad5f40ecde90d78e4a7c861c003fe92747d5518/seccomp/default.json -o "$profile"
+            python3 -m json.tool "$profile" >/dev/null
+            echo "WE_PROTON_DOCKER_OPTS=--security-opt=seccomp=$profile" >> "$GITHUB_ENV"
+            echo "Using the pinned Docker v0.2.1 profile for 32-bit socketcall compatibility."
+          fi
 
       - name: Prepare host
-        run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if sudo apt-get -o Acquire::Retries=2 update && \
+              sudo apt-get -o Acquire::Retries=2 install -y ccache fontforge-nox; then
+              exit 0
+            fi
+            if (( attempt == 3 )); then
+              echo "::error::Failed to install build dependencies after $attempt attempts."
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Restore cache
         id: ccache-restore
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: ccache-proton-${{ github.run_id }}
+          key: ccache-proton-${{ inputs.target_arch == 'arm64' && 'arm64-' || '' }}${{ github.run_id }}
           restore-keys: |
-            ccache-proton
+            ccache-proton-${{ inputs.target_arch == 'arm64' && 'arm64-' || '' }}
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -55,20 +85,62 @@ jobs:
           git submodule update --init --filter=tree:0 --recursive
           # apply proton-ge-custom patches
           ./patches/protonprep-valve-staging.sh || true
-          # strip binaries at compile time to save space in the runner
+          # disable debug info and strip linked outputs to save space in the runner
           patch -Np1 -i ./.github/patches/0001-build-strip-binaries-early.patch
+          patch -Np1 -i ./.github/patches/0002-piper-phonemize-download-retry.patch
           mkdir ./build
 
       - name: Configure
         working-directory: ./build
         run: |
-          ../configure.sh --build-name=${{ inputs.name }} --container-engine=docker
+          ../configure.sh --build-name=${{ inputs.name }} --target-arch=${{ inputs.target_arch }} --container-engine=docker --docker-opts="${WE_PROTON_DOCKER_OPTS:-}"
 
       - name: Make ${{ inputs.name }}
         working-directory: ./build
         run: |
-          make -j$(nproc) redist
+          set -o pipefail
+          make -j$(nproc) redist 2>&1 | tee >(tail -n 1000 > make-tail.log)
 
+      - name: Dump build failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f build/make-tail.log ]; then
+            {
+              echo "=== matching errors from Make tail ==="
+              grep -n -i -E -C 3 'fatal error:|error:|undefined reference|no space left on device|failed:|ninja: build stopped|make(\\[[0-9]+\\])?: \\*\\*\\*' build/make-tail.log | tail -n 1200 || true
+              echo "=== final Make output ==="
+              cat build/make-tail.log
+            } > build/build-failure-diagnostics.txt
+          fi
+          if [ -d build ]; then
+            echo "=== dav1d Meson diagnostics ==="
+            find build -path '*/obj-dav1d-*/meson-logs/meson-log.txt' -type f -print -exec cat {} +
+            echo "=== ONNX Runtime headers and archives ==="
+            find build -type f -name 'onnxruntime_cxx_api.h' -print
+            find build -type f -name 'onnxruntime_c_api.h' -print
+            echo "=== ONNX Runtime archive contents ==="
+            while IFS= read -r archive; do
+              if tar -tzf "$archive" >/dev/null; then
+                echo "Valid archive: $archive"
+              else
+                echo "::warning::ONNX Runtime archive is truncated or invalid: $archive"
+              fi
+            done < <(find build -type f -name 'onnxruntime-linux-*.tgz')
+            echo "=== ONNX Runtime extracted files ==="
+            while IFS= read -r dir; do find "$dir" -maxdepth 3 -type f -print; done < <(find build -type d -name 'onnxruntime-*')
+          else
+            echo "No build directory; failure occurred before Configure."
+          fi
+
+      - name: Upload build failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-failure-diagnostics-${{ inputs.target_arch }}
+          path: ./build/build-failure-diagnostics.txt
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Save cache
         id: ccache-save
         if: always()

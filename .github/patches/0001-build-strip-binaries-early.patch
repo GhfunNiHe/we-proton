@@ -4,22 +4,15 @@ Date: Tue, 19 Mar 2024 14:20:43 +0200
 Subject: [PATCH] build: strip binaries early
 
 ---
- Makefile.in | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Makefile.in | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index cf9a1f71..0a284e58 100644
 --- a/Makefile.in
 +++ b/Makefile.in
-@@ -57,7 +57,7 @@ i386_CFLAGS    := -mstackrealign -march=nocona -mtune=core-avx2 -mfpmath=sse
- x86_64_CFLAGS  := -mcmodel=small -march=nocona -mtune=core-avx2 -mfpmath=sse
- 
- CFLAGS  = -O2 -fwrapv -fno-strict-aliasing
+@@ -60,1 +60,2 @@
 -CFLAGS += -ggdb -ffunction-sections -fdata-sections -fno-omit-frame-pointer
-+CFLAGS += -s -ffunction-sections -fdata-sections -fno-omit-frame-pointer
- CFLAGS += -ffile-prefix-map=$(CCACHE_BASEDIR)=.
- 
- ifneq ($(SUPPRESS_WARNINGS),)
++CFLAGS += -g0 -ffunction-sections -fdata-sections -fno-omit-frame-pointer
++LDFLAGS += -s
 -- 
 2.50.0
-
