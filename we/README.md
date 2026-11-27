@@ -2,7 +2,7 @@
 
 基于 [GE-Proton](https://github.com/GloriousEggroll/proton-ge-custom) 和 [DW-Proton](https://dawn.wine/dawn-winery/dwproton) 的个人 Proton，攒一些 Wine（和 vkd3d-proton）的 bug 修复。自己和朋友用，不往上游提。
 
-- 顶层是 GE-Proton 的仓库，从 tag `GE-Proton11-7` 起的分支，之后跟进到 `GE-Proton11-12`。子模块版本都用 GE-Proton 的（`GE-Proton11-7` 时 dxvk、vkd3d-proton、protonfixes 曾换成 DW-Proton 用的更新版本，`GE-Proton11-11` 的已经比它们新，比较见 [`ge-dw-merge.md`](ge-dw-merge.md)）
+- 顶层是 GE-Proton 的仓库，从 tag `GE-Proton11-7` 起的分支，之后跟进到 `GE-Proton11-14`。子模块版本都用 GE-Proton 的（`GE-Proton11-7` 时 dxvk、vkd3d-proton、protonfixes 曾换成 DW-Proton 用的更新版本，`GE-Proton11-11` 的已经比它们新，比较见 [`ge-dw-merge.md`](ge-dw-merge.md)）
 - Wine 子模块不改：`patches/protonprep-valve-staging.sh`（GE-Proton 的脚本）在构建前往 Valve 的 Wine 上打 GE-Proton 的补丁和 staging，最后打 `patches/dwproton/` 和 `patches/wine/`
 - `patches/dwproton/`：DW-Proton（`dwproton-11.0-14`，之后跟进到 `dwproton-11.0-15`）的 Wine 提交里 GE-Proton 没有的那些，冲突解决过。怎么挑的、丢了哪些、冲突怎么解的，见 [`ge-dw-merge.md`](ge-dw-merge.md)
 - `patches/wine/`：WE-Proton 自己的 Wine 补丁，编号沿用原来的（中间的空号是这一版不再需要的，见下表）
@@ -65,7 +65,13 @@
 | `wine/0056-win32u-Report-the-previous-foreground-thread-in-WM_A` | `WM_ACTIVATEAPP(TRUE)` 的 lParam 报上一个前台窗口的线程（前台原来不在 Wine 里时报桌面线程），取代 GE-Proton `game-patches/0001` 报收消息线程自己的做法；`set_foreground_window()` 经 `set_active_window()` 的最后一个参数传下来 |
 | `wine/0059-win32u-Keep-top-level-windows-in-place-when-the-virt` | 虚拟屏原点（主显示器左上角）变化时，桌面窗口把所有没最小化的顶层窗口平移同样的量，旧原点取自桌面窗口自己的矩形；原来窗口矩形不动、X 窗口也不动，左边屏上的窗口会被算到虚拟屏外面而撤掉 |
 | `wine/0060-user32-Implement-ShutdownBlockReasonCreate-Query-Des` | `ShutdownBlockReasonCreate/Query/Destroy`：原因存成窗口属性，参数检查和错误码照 Windows 11 实测（只限顶层窗口、空原因 87、无效窗口 1400、桌面窗口返回 5），导出原来缺的 Query |
+| `wine/0062-nsiproxy-Ignore-stale-Unix-network-interface-entries` | 已经删掉的网卡不再留在接口表里：虚拟网卡删除后同名重建，旧记录原来一直在，枚举里出现多个同名网卡，按名字查到的是已经不存在的那个。现在枚举和名字/索引/LUID 的转换都跳过不再对应真实接口的记录（PR #1） |
+| `wine/0063-nsiproxy-Reuse-interface-translations-within-a-route` | 一次路由枚举里每个接口只核对一次：0062 的核对原来对每条路由都做，路由很多时枚举和增删路由慢好几倍（PR #1） |
 | `wine/0065-winedmo-Use-frame-threading-for-H.264-also-for-low-l` | H.264 解码在 `MF_LOW_LATENCY` 下也开帧多线程：原来只开切片多线程，每帧一个切片的视频只能单核解码，4K 60 帧跟不上实时，播放器丢掉迟到的帧，画面全黑 |
+| `wine/0066-win32u-Let-winex11-blend-layered-child-windows-over-` | （临时：DW-Proton 上游修了之后换成那边的）分层子窗口（包括 `SetParent` 进别的窗口的分层弹窗）叠到父窗口的 3D 画面上：win32u 保存它的图像和整体不透明度（只改不透明度的 `UpdateLayeredWindow` 不再被忽略），winex11 把它混到父窗口交出的每一帧上 |
+| `wine/0067-winex11-Keep-the-last-frame-when-a-client-window-goe` | （同上）客户区窗口转成离屏时保留最后一帧，不再闪一两帧黑屏 |
+| `wine/0068-win32u-Let-winewayland-show-layered-child-windows-as` | （同上）winewayland 下分层子窗口保留自己的表面，由驱动做成子表面交给合成器混合 |
+| `wine/0069-winewayland-Show-a-child-window-with-a-surface-as-a-` | （同上）winewayland：有表面的子窗口始终留在顶层窗口的子表面树里，位置按父窗口客户区算 |
 | `protonfixes/0051-protonfixes-Also-run-fixes-for-run-when-PROTONFIXES_` | 设了 `PROTONFIXES_RUN_VERB=1` 时，用 `proton run` 启动的程序也执行 protonfixes（`waitforexitandrun` 要先等 wineserver 退出，往运行中的会话里加程序只能用 `run`）；`PROTONFIXES_DISABLE` 仍然优先 |
 | `vkd3d-proton/we-0001-Iterate-frozen-loop-break-rewrites-until-no-frozen-loop` | dxil-spirv 生成非法的结构化控制流 |
 | `vkd3d-proton/0002-vkd3d-bound-present-waits-during-swapchain-drain` | （这一版没有：GE-Proton 直接带着原版）（GE）销毁交换链时等待呈现有上限，不再卡死 |
@@ -86,6 +92,8 @@ GE-Proton 主线在正式版之前的一部分修复会提前搬过来，放在 
 - `writecopy_probe`、`writecopy_probe2`（0005）：写时复制页写前写后报告的保护属性、代码页打补丁、区域边界
 - `noactivate_probe`（0006）：普通窗口隐藏、最小化、销毁时谁接手前台，`WS_EX_NOACTIVATE` 窗口在同一进程和另一个进程两种情况；要在有显示的环境里跑（Xvfb 即可）
 - `layered_child_probe`（0007）：用 `UpdateLayeredWindow` 更新的分层子窗口画在哪里、跟不跟父窗口走。用 `layered_child_grab.py` 在 Xvfb 上跑（`DISPLAY=:N layered_child_grab.py <runner>/files/bin/wine layered_child_probe.exe [pos]`），它从 X 根窗口读像素，需要没有合成器的 X 服务器
+- `ndis_interface_lifecycle_probe`（0062，PR #1）：用内置 wintun 建一个虚拟网卡、关掉、同名再建，三轮，每一步查 `GetIfTable2`、`GetAdaptersAddresses`、别名/索引/LUID 的转换，看删掉的网卡是否还在、名字是否指向当前的那个。`--isolated` 才运行；在新的用户 + 网络命名空间里跑（`unshare -Urn`），不要在真实网络上跑。记录：`.ge33.txt`（没有 0062）、`.ge33-0063.txt`，以及 PR 提交时的 `.wine31-*.txt`。`route_perf_probe`、`route_interface_enumeration_probe`（0063）要外层脚本配置临时接口和路由，脚本没有随 PR 提供，只留源码和当时的输出
+- `layered_popup_child_probe`（0066–0069）：一个分层弹窗（`WS_POPUP` + `WS_EX_LAYERED`）用 `SetParent` 进到一个用 D3D11 持续交帧的窗口里，图像三段（不透明绿、50% 红、全透明），看它有没有叠在父窗口的画面上、透明处是不是实时的画面，以及移动、隐藏、再显示、销毁之后的样子。参数：`gdi`（父窗口用 GDI 画）、`flip`、`clip`（父窗口带 `WS_CLIPCHILDREN`）、`caption`、`full`（铺满显示器）、`indirect`（带脏矩形）、`fade`（先以不透明度 0 提交图像，再只改不透明度）、`selfgrab`（自己读屏幕，Windows 上用）。`layered_popup_child_probe.sh <runner> <输出文件> [参数]` 在无头 gamescope 里用 X11 驱动跑，`layered_popup_child_grab.py` 读父窗口的 X 窗口；`WAYLAND=1` 时用 Wayland 驱动在当前 niri 会话里跑，靠 `niri msg agent capture` 截窗口取色。记录：`layered_popup_child_probe.ge32.txt` / `.ge33.txt`（X11，修复前后）、`layered_popup_child_probe.wayland.ge32.txt` / `.wayland.ge33.txt`
 - `typelib_noflags_probe`（0008）：参数不带方向的类型库接口跨套间调用时，服务端看到什么、客户端拿回什么。`build.sh` 另编一个 32 位的 `typelib_noflags_probe32.exe`，两个都要跑
 - `minprec_sig_probe`（0009）：用到最低精度类型的着色器，`D3DGetBlobPart` 取各种签名时返回哪些段，`D3DReflect`（D3D11/D3D12 接口）报告哪些参数，包括 `MinPrecision`。参数是 `minprec_vs.dxbc minprec_hs.dxbc`，这两个是在 Windows 上用 d3dcompiler_47 编的，源码在同名的 `.hlsl` 里
 - `sta_thread_exit_probe`（0008 排查时的弯路）：客户端 STA 线程不调 `CoUninitialize` 就退出时，代理的引用什么时候释放；Windows 和 Wine 相同
